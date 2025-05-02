@@ -267,19 +267,13 @@ local_file_path = "/mnt/data/cleaned_egypt_population_wide.csv"
 with st.spinner('Loading cleaned data from uploaded file...'):
     try:
         df_cleaned = pd.read_csv(local_file_path)
-        # تأكد أن كل أسماء الأعمدة إنجليزية بدون رموز غريبة
-        df_cleaned.columns = [re.sub(r"[^\w\s]", "", col).strip().replace(" ", "_").lower() for col in df_cleaned.columns]
-        st.session_state['cleaned_df'] = df_cleaned
-        st.success("Data loaded from uploaded file successfully!")
-   with st.spinner('Loading cleaned data from uploaded file...'):
-    try:
-        df_cleaned = pd.read_csv(local_file_path)
         df_cleaned.columns = [re.sub(r"[^\w\s]", "", col).strip().replace(" ", "_").lower() for col in df_cleaned.columns]
         st.session_state['cleaned_df'] = df_cleaned
         st.success("Data loaded from uploaded file successfully!")
     except Exception as e:
         st.error(f"Error loading file: {e}")
         st.session_state['cleaned_df'] = None
+
 
 # نخرج هذا التحقق خارج الـ try-except
 if st.session_state.get('cleaned_df') is not None:
