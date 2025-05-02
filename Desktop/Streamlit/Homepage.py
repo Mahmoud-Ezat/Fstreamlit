@@ -262,17 +262,18 @@ st.header("Load and Clean Data")
 
 import os
 
-local_file_path = "/mnt/data/cleaned_egypt_population_wide.csv"
+github_url = "https://raw.githubusercontent.com/Mahmoud-Ezat/Fstreamlit/master/Desktop/Streamlit/cleaned_egypt_population_wide.csv"
 
-with st.spinner('Loading cleaned data from uploaded file...'):
+with st.spinner('Loading cleaned data from GitHub...'):
     try:
-        df_cleaned = pd.read_csv(local_file_path)
+        df_cleaned = pd.read_csv(github_url)
         df_cleaned.columns = [re.sub(r"[^\w\s]", "", col).strip().replace(" ", "_").lower() for col in df_cleaned.columns]
         st.session_state['cleaned_df'] = df_cleaned
-        st.success("Data loaded from uploaded file successfully!")
+        st.success("Data loaded from GitHub successfully!")
     except Exception as e:
-        st.error(f"Error loading file: {e}")
+        st.error(f"Error loading file from GitHub: {e}")
         st.session_state['cleaned_df'] = None
+
 
 
 # نخرج هذا التحقق خارج الـ try-except
