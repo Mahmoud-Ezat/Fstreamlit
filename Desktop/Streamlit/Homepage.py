@@ -5,22 +5,20 @@ from bs4 import BeautifulSoup
 import pandas as pd
 import numpy as np
 import re
-import os # Hinzugefügt für os.path.exists, obwohl wir es hier nicht direkt verwenden
+import os
 
 # --- Seitenkonfiguration (Muss der erste Streamlit-Befehl sein) ---
 st.set_page_config(
-    page_title="Egypt Population - Home & Data", # Seitentitel im Browser-Tab bleibt
+    page_title="Egypt Population - Home & Data",
     layout="wide",
-    page_icon="🇪🇬" # Das Icon kann bleiben, es beeinflusst nicht den Haupttitel
+    page_icon="🇪🇬"
 )
 
 # --- Caching-Funktion (Daten laden und bereinigen - von der Webseite) ---
-# Diese Funktion wird jetzt *nur* aufgerufen, wenn die GitHub-Datei nicht geladen wird.
 @st.cache_data(ttl=3600)
 def load_and_clean_data_from_web(url):
     """
     Scrapt Bevölkerungsdaten von der angegebenen URL, bereinigt sie und gibt ein Pandas DataFrame zurück.
-    (Inhalt der Funktion ist identisch mit der vorherigen `load_and_clean_data`-Funktion)
     """
     # --- Hilfsfunktionen ---
     def clean_numeric_column(col):
@@ -48,7 +46,7 @@ def load_and_clean_data_from_web(url):
         return int(match.group(0)) if match else None
     # --- Ende Hilfsfunktionen ---
 
-    st.info(f"Fetching data from {url}...") # Info für Web-Scraping bleibt
+    st.info(f"Fetching data from {url}...")
     try:
         output = requests.get(url, timeout=15)
         output.raise_for_status()
@@ -207,13 +205,12 @@ def load_and_clean_data_from_web(url):
     return egypt_data
 
 # --- Funktion zum Laden von GitHub (mit Caching) ---
-@st.cache_data(ttl=3600) # Cacht auch das Laden von GitHub
+@st.cache_data(ttl=3600)
 def load_data_from_github(github_url):
     """Lädt eine CSV-Datei von GitHub und gibt ein Pandas DataFrame zurück."""
-    # st.info(f"Attempting to load cleaned data from GitHub: {github_url}...") # Entfernt
+    # st.info(...) wurde hier entfernt
     try:
         df = pd.read_csv(github_url)
-        # Bereinigt Spaltennamen direkt nach dem Laden
         df.columns = [re.sub(r"[^\w\s]", "", str(col)).strip().replace(" ", "_").lower() for col in df.columns]
         st.success("Data loaded from GitHub successfully!")
         return df
@@ -222,8 +219,7 @@ def load_data_from_github(github_url):
         return None
 
 # --- App Layout ---
-# *** KORREKTUR HIER: Emoji aus dem Titel entfernt ***
-st.title("Egypt Population Data Analysis")
+st.title("Egypt Population Data Analysis") # Titel ohne Emoji
 st.caption("Data Source: [City Population](https://www.citypopulation.de/en/egypt/admin/) / Pre-cleaned GitHub CSV")
 
 st.divider()
@@ -242,24 +238,21 @@ force_reload = query_params.get("reload", ["false"])[0].lower() == "true"
 if 'cleaned_df' not in st.session_state or st.session_state['cleaned_df'] is None or force_reload:
     if force_reload:
         st.warning("Forcing data reload...")
-        load_data_from_github.clear() # Lösche GitHub-Cache
-        load_and_clean_data_from_web.clear() # Lösche Web-Scraping-Cache
+        load_data_from_github.clear()
+        load_and_clean_data_from_web.clear()
 
-    # 1. Versuch: GitHub
     df_loaded = load_data_from_github(github_url)
 
-    # 2. Versuch: Web-Scraping (nur wenn GitHub fehlschlägt)
     if df_loaded is None:
         st.info("GitHub load failed, attempting web scraping...")
         with st.spinner('Fetching and cleaning data from web... Please wait.'):
             df_loaded = load_and_clean_data_from_web(web_url)
 
-    # Speichere das Ergebnis (DataFrame oder None) im Session State
     if df_loaded is not None:
         st.session_state['cleaned_df'] = df_loaded
         st.success("Data loading and cleaning complete!")
         if force_reload:
-            st.query_params.clear() # Parameter nach erfolgreichem Laden entfernen
+            st.query_params.clear()
     else:
         st.error("Failed to load data from both GitHub and Web Scraping.")
         st.session_state['cleaned_df'] = None
@@ -272,11 +265,9 @@ if 'cleaned_df' in st.session_state and st.session_state['cleaned_df'] is not No
     df_display = st.session_state['cleaned_df']
 
     st.subheader("Preview of Cleaned Data")
-    # Fülle NaNs nur für die Anzeige, nicht im session_state
-    st.dataframe(df_display.head(10).fillna("N/A"))
+    st.dataframe(df_display.fillna("N/A"))
     st.write(f"Shape of the cleaned data: {df_display.shape}")
 
-    # Zeige NaN-Füllinfos an, falls vorhanden (nur wenn vom Web-Scraping geladen)
     if 'nan_fill_means' in df_display.attrs and df_display.attrs['nan_fill_means']:
          with st.expander("NaN Filling Information (Numeric Columns - Mean, if scraped)"):
               st.write("Original columns and mean used for filling:")
@@ -286,11 +277,12 @@ if 'cleaned_df' in st.session_state and st.session_state['cleaned_df'] is not No
          with st.expander("NaN Filling Information (Categorical Columns - Mode, if scraped)"):
              st.json(df_display.attrs['nan_fill_modes'])
 
-    st.info("Navigate to the 'Analysis' and 'Visualizations' pages using the sidebar.")
+    # *** st.info-Zeile hier entfernt ***
+    # st.info("Navigate to the 'Analysis' and 'Visualizations' pages using the sidebar.")
+
     st.button("Reload Data", on_click=lambda: st.query_params.__setitem__("reload", "true"), help="Click to force a refresh of the data.")
 
 else:
     st.warning("Data not loaded. Cannot display preview or analysis.")
-    # Biete Button zum erneuten Versuch, falls vorheriger Ladevorgang fehlgeschlagen ist
     if st.session_state.get('cleaned_df', 'not_loaded') is None:
         st.button("Try Reloading Data", on_click=lambda: st.query_params.__setitem__("reload", "true"))
