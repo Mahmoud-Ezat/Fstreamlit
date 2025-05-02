@@ -11,7 +11,7 @@ import os # Hinzugefügt für os.path.exists, obwohl wir es hier nicht direkt ve
 st.set_page_config(
     page_title="Egypt Population - Home & Data",
     layout="wide",
-    page_icon="🇪🇬"
+   
 )
 
 # --- Caching-Funktion (Daten laden und bereinigen - von der Webseite) ---
