@@ -274,12 +274,13 @@ with st.spinner('Loading cleaned data from GitHub...'):
         st.error(f"Error loading file from GitHub: {e}")
         st.session_state['cleaned_df'] = None
 
+if 'cleaned_df' in st.session_state and st.session_state['cleaned_df'] is not None:
+    df_display = st.session_state['cleaned_df']  # يستخدم الـ df من الـ session_state
+    df_display = df_display.fillna('Not Available')
 
-
-df_display = st.session_state['cleaned_df']  # يستخدم الـ df من الـ session_state
-
-df_display = df_display.fillna('Not Available')
-
+    st.subheader("Preview of Cleaned Data")
+    st.dataframe(df_display)
+    st.write(f"Shape of the cleaned data: {df_display.shape}")
 else:
     st.warning("Data not loaded. Cannot display preview or analysis.")
     st.button("Try Reloading Data", on_click=lambda: st.query_params.__setitem__("reload", "true"))
