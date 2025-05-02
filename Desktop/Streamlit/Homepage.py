@@ -260,21 +260,21 @@ st.divider()
 st.header("Load and Clean Data")
 
 
-url = "https://www.citypopulation.de/en/egypt/admin/"
-# Lädt Daten und speichert sie im Session-Status, wenn erfolgreich
-# Überprüft, ob 'force_reload' in den Query-Parametern ist, um das Caching zu umgehen
-query_params = st.query_params
-force_reload = query_params.get("reload", ["false"])[0].lower() == "true"
+import os
 
-if 'cleaned_df' not in st.session_state or st.session_state['cleaned_df'] is None or force_reload:
-    if force_reload:
-        st.warning("Forcing data reload...")
-        # Lösche den Cache für diese Funktion explizit (falls notwendig, aber @st.cache_data sollte dies meist handhaben)
-        # Normalerweise ist ein Neuladen der Seite ausreichend, wenn Cache-Parameter gleich bleiben
-        load_and_clean_data.clear() # Versuch den Cache zu löschen
+local_file_path = "/mnt/data/cleaned_egypt_population_wide.csv"
 
-    with st.spinner('Fetching and cleaning data... Please wait.'):
-        df_cleaned = load_and_clean_data(url)
+with st.spinner('Loading cleaned data from uploaded file...'):
+    try:
+        df_cleaned = pd.read_csv(local_file_path)
+        # تأكد أن كل أسماء الأعمدة إنجليزية بدون رموز غريبة
+        df_cleaned.columns = [re.sub(r"[^\w\s]", "", col).strip().replace(" ", "_").lower() for col in df_cleaned.columns]
+        st.session_state['cleaned_df'] = df_cleaned
+        st.success("Data loaded from uploaded file successfully!")
+    except Exception as e:
+        st.error(f"Error loading file: {e}")
+        st.session_state['cleaned_df'] = None
+
     if df_cleaned is not None:
         st.session_state['cleaned_df'] = df_cleaned
         st.success("Data loaded and cleaned successfully! Navigate to other pages for analysis.")
