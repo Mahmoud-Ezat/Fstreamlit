@@ -9,9 +9,9 @@ import os # Hinzugefügt für os.path.exists, obwohl wir es hier nicht direkt ve
 
 # --- Seitenkonfiguration (Muss der erste Streamlit-Befehl sein) ---
 st.set_page_config(
-    page_title="Egypt Population - Home & Data",
+    page_title="Egypt Population - Home & Data", # Seitentitel im Browser-Tab bleibt
     layout="wide",
-   
+    page_icon="🇪🇬" # Das Icon kann bleiben, es beeinflusst nicht den Haupttitel
 )
 
 # --- Caching-Funktion (Daten laden und bereinigen - von der Webseite) ---
@@ -210,8 +210,7 @@ def load_and_clean_data_from_web(url):
 @st.cache_data(ttl=3600) # Cacht auch das Laden von GitHub
 def load_data_from_github(github_url):
     """Lädt eine CSV-Datei von GitHub und gibt ein Pandas DataFrame zurück."""
-    # *** st.info-Zeile hier entfernt ***
-    # st.info(f"Attempting to load cleaned data from GitHub: {github_url}...")
+    # st.info(f"Attempting to load cleaned data from GitHub: {github_url}...") # Entfernt
     try:
         df = pd.read_csv(github_url)
         # Bereinigt Spaltennamen direkt nach dem Laden
@@ -223,7 +222,8 @@ def load_data_from_github(github_url):
         return None
 
 # --- App Layout ---
-st.title("🇪🇬 Egypt Population Data Analysis")
+# *** KORREKTUR HIER: Emoji aus dem Titel entfernt ***
+st.title("Egypt Population Data Analysis")
 st.caption("Data Source: [City Population](https://www.citypopulation.de/en/egypt/admin/) / Pre-cleaned GitHub CSV")
 
 st.divider()
