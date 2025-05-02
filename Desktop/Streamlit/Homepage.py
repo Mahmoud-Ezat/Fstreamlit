@@ -183,18 +183,11 @@ def load_and_clean_data(url):
         col_mean = egypt_data[col].mean()
         if pd.notna(col_mean): # Speichert nur, wenn der Mittelwert gültig ist
             means[col] = col_mean
-            # Finde den ursprünglichen Spaltennamen, wenn möglich (aus pop_col_candidates)
             original_col_name = col # Standardmäßig der aktuelle Name
-            # *** HIER IST DIE ÄNDERUNG: Die Schleife, die den Fehler verursacht hat, wurde entfernt ***
-            # Stattdessen verwenden wir die Liste `pop_col_candidates`, die wir *vorher* erstellt haben.
-            # Wir suchen den Originalnamen, dessen *bereinigte* Version dem aktuellen `col` entspricht.
-            # Annahme: clean_column_name() wurde bereits oben definiert
             for original in pop_col_candidates:
-                # Bereinige den Kandidatennamen für den Vergleich
-                # Achtung: clean_column_name muss oben definiert sein!
                 if clean_column_name(original) == col:
                     original_col_name = original
-                    break # Stoppe, wenn gefunden
+                    break
             original_means[original_col_name] = col_mean
             egypt_data[col] = egypt_data[col].fillna(col_mean)
 
@@ -209,7 +202,6 @@ def load_and_clean_data(url):
                 mode_val = calculated_mode[0] # Nimmt den ersten Modus, falls vorhanden
             else:
                 # Behandelt den Fall, dass die Spalte keinen Modus hat (z.B. nur NaNs oder leer nach Bereinigung)
-                # Die Warnung wird jetzt direkt auf der Seite angezeigt, wenn fillna aufgerufen wird
                 mode_val = 'Unknown' # Verwendet einen Standardwert
             modes[col] = mode_val # Speichert den verwendeten Modus (oder Standardwert)
             # Wendet fillna an und zeigt die Warnung direkt an, wenn die Modusberechnung fehlgeschlagen ist
@@ -289,7 +281,7 @@ if 'cleaned_df' not in st.session_state or st.session_state['cleaned_df'] is Non
         # Entferne den Reload-Parameter nach erfolgreichem Laden
         if force_reload:
              st.query_params.clear() # Löscht alle Query-Parameter
-             # Oder spezifischer: st.query_params.pop("reload", None)
+             # Oder spezifischer: del st.query_params["reload"]
     else:
         st.error("Failed to load or process data. Please check the URL or the website structure.")
         st.session_state['cleaned_df'] = None # Stellt sicher, dass es None ist, wenn fehlgeschlagen
@@ -300,7 +292,8 @@ else:
     else:
          # Dieser Fall sollte selten sein, aber zur Sicherheit
          st.error("Previous attempt to load data failed.")
-         st.button("Try Reloading Data", on_click=lambda: st.query_params.set("reload", "true"))
+         # *** KORREKTUR HIER ***
+         st.button("Try Reloading Data", on_click=lambda: st.query_params.__setitem__("reload", "true")) # Korrekte Syntax
 
 
 # Zeigt Daten und Informationen nur an, wenn erfolgreich geladen
@@ -322,10 +315,12 @@ if 'cleaned_df' in st.session_state and st.session_state['cleaned_df'] is not No
              st.json(df_display.attrs['nan_fill_modes'])
 
     st.info("Navigate to the 'Analysis' and 'Visualizations' pages using the sidebar.")
-    st.button("Reload Data", on_click=lambda: st.query_params.set("reload", "true"), help="Click to force a refresh of the data from the source.")
+    # *** KORREKTUR HIER ***
+    st.button("Reload Data", on_click=lambda: st.query_params.__setitem__("reload", "true"), help="Click to force a refresh of the data from the source.") # Korrekte Syntax
 
 else:
     st.warning("Data not loaded. Cannot display preview or analysis.")
     # Biete einen Button zum Neuladen an, wenn der erste Versuch fehlschlug
     if st.session_state.get('cleaned_df', 'not_loaded') is None:
-         st.button("Try Reloading Data", on_click=lambda: st.query_params.set("reload", "true"))
+         # *** KORREKTUR HIER ***
+         st.button("Try Reloading Data", on_click=lambda: st.query_params.__setitem__("reload", "true")) # Korrekte Syntax
