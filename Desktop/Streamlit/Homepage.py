@@ -19,6 +19,37 @@ def load_and_clean_data(url):
     """
     Scrapt Bevölkerungsdaten von der angegebenen URL, bereinigt sie und gibt ein Pandas DataFrame zurück.
     """
+    # --- Helper Function Definitions (Moved to the top) ---
+    def clean_numeric_column(col):
+        # Stellt sicher, dass die Spalte zuerst als Serie vom Typ String behandelt wird
+        col_str = col.astype(str)
+        cleaned_col = col_str.str.replace(",", "", regex=False).str.strip()
+        # Behandelt potenzielle Nicht-String-Werte während des Ersetzens vor der Konvertierung
+        cleaned_col = cleaned_col.replace("...", np.nan, regex=False)
+        return pd.to_numeric(cleaned_col, errors="coerce")
+
+    def clean_text_column(text):
+        if pd.isna(text): return None
+        text = str(text)
+        # Behält grundlegende alphanumerische Zeichen, arabischen Unicode-Bereich, Bindestriche und Leerzeichen
+        text = re.sub(r"[^\\w\\s\\u0600-\\u06FF\\-]", "", text)
+        text = re.sub(r"\\s+", " ", text).strip()
+        return text if text else None # Gibt None zurück, wenn nach der Bereinigung leer
+
+    def clean_column_name(col_name):
+        # Entfernt Daten, Sonderzeichen, zusätzliche Leerzeichen, behält das Schlüsselwort 'Population'
+        col_name_str = str(col_name) # Sicherstellen, dass es ein String ist
+        cleaned = re.sub(r'\d{4}-\d{2}-\d{2}', '', col_name_str) # Entfernt YYYY-MM-DD
+        cleaned = re.sub(r'[()\[\]]+', '', cleaned) # Entfernt Klammern/Eckklammern
+        cleaned = re.sub(r'\s+', '', cleaned).strip() # Entfernt Leerzeichen
+        return cleaned
+
+    def extract_year(column_name):
+        match = re.search(r'\d{4}', str(column_name)) # Stellt sicher, dass column_name ein String ist
+        return int(match.group(0)) if match else None
+    # --- End Helper Function Definitions ---
+
+
     st.info(f"Fetching data from {url}...") # Info für den Benutzer
     try:
         output = requests.get(url, timeout=15) # Timeout leicht erhöht
@@ -115,15 +146,8 @@ def load_and_clean_data(url):
 
     # --- Datenbereinigung (Angepasst aus Notebook) ---
     st.info("Cleaning data...")
-    def clean_numeric_column(col):
-        # Stellt sicher, dass die Spalte zuerst als Serie vom Typ String behandelt wird
-        col_str = col.astype(str)
-        cleaned_col = col_str.str.replace(",", "", regex=False).str.strip()
-        # Behandelt potenzielle Nicht-String-Werte während des Ersetzens vor der Konvertierung
-        cleaned_col = cleaned_col.replace("...", np.nan, regex=False)
-        return pd.to_numeric(cleaned_col, errors="coerce")
 
-    # Identifiziere potenzielle Bevölkerungsspalten anhand des Namensmusters
+    # Identifiziere potenzielle Bevölkerungsspalten anhand des Namensmusters (vor dem Bereinigen der Spaltennamen)
     pop_col_candidates = [col for col in egypt_data.columns if 'Population' in str(col)]
     for col in pop_col_candidates:
         if col in egypt_data.columns: # Stelle sicher, dass die Spalte existiert
@@ -144,14 +168,6 @@ def load_and_clean_data(url):
         st.write(f"Dropped {rows_dropped} duplicate rows.")
 
     # Textspalten bereinigen (Status, Native) - Prüfe, ob sie existieren
-    def clean_text_column(text):
-        if pd.isna(text): return None
-        text = str(text)
-        # Behält grundlegende alphanumerische Zeichen, arabischen Unicode-Bereich, Bindestriche und Leerzeichen
-        text = re.sub(r"[^\\w\\s\\u0600-\\u06FF\\-]", "", text)
-        text = re.sub(r"\\s+", " ", text).strip()
-        return text if text else None # Gibt None zurück, wenn nach der Bereinigung leer
-
     for col in ['Status', 'Native']:
         if col in egypt_data.columns:
             egypt_data[col] = egypt_data[col].apply(clean_text_column)
@@ -169,12 +185,19 @@ def load_and_clean_data(url):
             means[col] = col_mean
             # Finde den ursprünglichen Spaltennamen, wenn möglich (aus pop_col_candidates)
             original_col_name = col # Standardmäßig der aktuelle Name
+            # *** HIER IST DIE ÄNDERUNG: Die Schleife, die den Fehler verursacht hat, wurde entfernt ***
+            # Stattdessen verwenden wir die Liste `pop_col_candidates`, die wir *vorher* erstellt haben.
+            # Wir suchen den Originalnamen, dessen *bereinigte* Version dem aktuellen `col` entspricht.
+            # Annahme: clean_column_name() wurde bereits oben definiert
             for original in pop_col_candidates:
-                if clean_column_name(original) == col: # Vergleiche bereinigte Namen
+                # Bereinige den Kandidatennamen für den Vergleich
+                # Achtung: clean_column_name muss oben definiert sein!
+                if clean_column_name(original) == col:
                     original_col_name = original
-                    break
+                    break # Stoppe, wenn gefunden
             original_means[original_col_name] = col_mean
             egypt_data[col] = egypt_data[col].fillna(col_mean)
+
 
     # Speichert Modi vor dem Füllen von NaNs - KORRIGIERTER BLOCK
     modes = {} # Stellt sicher, dass das modes-Dict vor der Schleife definiert ist
@@ -194,19 +217,8 @@ def load_and_clean_data(url):
                  st.warning(f"Modus für Spalte '{col}' konnte nicht berechnet werden (könnte nur NaN oder leer sein). Fülle NaNs mit 'Unknown'.")
             egypt_data[col] = egypt_data[col].fillna(mode_val)
 
-    # --- Spalten bereinigen und umbenennen ---
+    # --- Spalten bereinigen und umbenennen (Definitionen sind jetzt oben) ---
     st.info("Renaming columns...")
-    def clean_column_name(col_name):
-        # Entfernt Daten, Sonderzeichen, zusätzliche Leerzeichen, behält das Schlüsselwort 'Population'
-        col_name_str = str(col_name) # Sicherstellen, dass es ein String ist
-        cleaned = re.sub(r'\d{4}-\d{2}-\d{2}', '', col_name_str) # Entfernt YYYY-MM-DD
-        cleaned = re.sub(r'[()\[\]]+', '', cleaned) # Entfernt Klammern/Eckklammern
-        cleaned = re.sub(r'\s+', '', cleaned).strip() # Entfernt Leerzeichen
-        return cleaned
-
-    def extract_year(column_name):
-        match = re.search(r'\d{4}', str(column_name)) # Stellt sicher, dass column_name ein String ist
-        return int(match.group(0)) if match else None
 
     column_mapping = {}
     new_columns = []
@@ -216,7 +228,12 @@ def load_and_clean_data(url):
         cleaned_name_base = clean_column_name(col)
         final_cleaned_name = cleaned_name_base
 
-        if year and 'Population' in str(col):
+        # Prüfe, ob die ursprüngliche Spalte (vor der Umbenennung) eine Bevölkerungsspalte war
+        is_population_col = False
+        if col in pop_col_candidates: # Vergleiche mit der Liste der ursprünglichen Kandidaten
+             is_population_col = True
+
+        if year and is_population_col: # Prüfe beides: Jahr extrahiert UND war ursprünglich eine Pop-Spalte
             new_name = f'population_{year}'
             column_mapping[col] = new_name
             new_columns.append(new_name)
