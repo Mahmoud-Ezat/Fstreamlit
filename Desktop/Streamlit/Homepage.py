@@ -48,7 +48,7 @@ def load_and_clean_data_from_web(url):
         return int(match.group(0)) if match else None
     # --- Ende Hilfsfunktionen ---
 
-    st.info(f"Fetching data from {url}...")
+    st.info(f"Fetching data from {url}...") # Info für Web-Scraping bleibt
     try:
         output = requests.get(url, timeout=15)
         output.raise_for_status()
@@ -210,7 +210,8 @@ def load_and_clean_data_from_web(url):
 @st.cache_data(ttl=3600) # Cacht auch das Laden von GitHub
 def load_data_from_github(github_url):
     """Lädt eine CSV-Datei von GitHub und gibt ein Pandas DataFrame zurück."""
-    st.info(f"Attempting to load cleaned data from GitHub: {github_url}...")
+    # *** st.info-Zeile hier entfernt ***
+    # st.info(f"Attempting to load cleaned data from GitHub: {github_url}...")
     try:
         df = pd.read_csv(github_url)
         # Bereinigt Spaltennamen direkt nach dem Laden
