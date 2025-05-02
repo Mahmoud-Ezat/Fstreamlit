@@ -291,7 +291,7 @@ if 'cleaned_df' in st.session_state and st.session_state['cleaned_df'] is not No
     df_display = st.session_state['cleaned_df'] # Verwendet das df aus dem Session-Status
 
     st.subheader("Preview of Cleaned Data")
-    st.dataframe(df_display.head(10))
+    st.dataframe(df_display)
     st.write(f"Shape of the cleaned data: {df_display.shape}")
 
     # Zeigt Informationen zum NaN-Füllen an
