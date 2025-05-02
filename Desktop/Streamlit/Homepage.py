@@ -276,10 +276,10 @@ with st.spinner('Loading cleaned data from GitHub...'):
 
 
 
-# نخرج هذا التحقق خارج الـ try-except
-if st.session_state.get('cleaned_df') is not None:
-    df_display = st.session_state['cleaned_df']
-    ...
+df_display = st.session_state['cleaned_df']  # يستخدم الـ df من الـ session_state
+
+df_display = df_display.fillna('Not Available')
+
 else:
     st.warning("Data not loaded. Cannot display preview or analysis.")
     st.button("Try Reloading Data", on_click=lambda: st.query_params.__setitem__("reload", "true"))
