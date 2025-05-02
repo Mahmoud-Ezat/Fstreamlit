@@ -271,29 +271,24 @@ with st.spinner('Loading cleaned data from uploaded file...'):
         df_cleaned.columns = [re.sub(r"[^\w\s]", "", col).strip().replace(" ", "_").lower() for col in df_cleaned.columns]
         st.session_state['cleaned_df'] = df_cleaned
         st.success("Data loaded from uploaded file successfully!")
+   with st.spinner('Loading cleaned data from uploaded file...'):
+    try:
+        df_cleaned = pd.read_csv(local_file_path)
+        df_cleaned.columns = [re.sub(r"[^\w\s]", "", col).strip().replace(" ", "_").lower() for col in df_cleaned.columns]
+        st.session_state['cleaned_df'] = df_cleaned
+        st.success("Data loaded from uploaded file successfully!")
     except Exception as e:
         st.error(f"Error loading file: {e}")
         st.session_state['cleaned_df'] = None
 
-    if df_cleaned is not None:
-        st.session_state['cleaned_df'] = df_cleaned
-        st.success("Data loaded and cleaned successfully! Navigate to other pages for analysis.")
-        # Entferne den Reload-Parameter nach erfolgreichem Laden
-        if force_reload:
-             st.query_params.clear() # Löscht alle Query-Parameter
-             # Oder spezifischer: del st.query_params["reload"]
-    else:
-        st.error("Failed to load or process data. Please check the URL or the website structure.")
-        st.session_state['cleaned_df'] = None # Stellt sicher, dass es None ist, wenn fehlgeschlagen
+# نخرج هذا التحقق خارج الـ try-except
+if st.session_state.get('cleaned_df') is not None:
+    df_display = st.session_state['cleaned_df']
+    ...
 else:
-    # Wenn bereits im Session-Status, prüfe, ob gültig
-    if st.session_state['cleaned_df'] is not None:
-        st.success("Cleaned data already loaded.")
-    else:
-         # Dieser Fall sollte selten sein, aber zur Sicherheit
-         st.error("Previous attempt to load data failed.")
-         # *** KORREKTUR HIER ***
-         st.button("Try Reloading Data", on_click=lambda: st.query_params.__setitem__("reload", "true")) # Korrekte Syntax
+    st.warning("Data not loaded. Cannot display preview or analysis.")
+    st.button("Try Reloading Data", on_click=lambda: st.query_params.__setitem__("reload", "true"))
+
 
 
 # Zeigt Daten und Informationen nur an, wenn erfolgreich geladen
